@@ -6,7 +6,7 @@
     6-axis robot kinematics library using Craig Modified DH parameters.
   </description>
 
-  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <maintainer email="entan0905@outlook.com">Entan Zhang</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
