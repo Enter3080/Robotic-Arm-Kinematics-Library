@@ -71,7 +71,10 @@ find_package(Eigen3 REQUIRED)
 
 add_executable(my_ik_demo src/my_ik_demo.cpp)
 
-target_include_directories(my_ik_demo PRIVATE ${my_lib_INCLUDE_DIRS})
+target_include_directories(my_ik_demo PRIVATE
+  ${my_lib_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS} 
+)
 target_link_libraries(my_ik_demo ${my_lib_LIBRARIES})
 ```
 
@@ -85,6 +88,8 @@ target_link_libraries(my_ik_demo ${my_lib_LIBRARIES})
 ```cpp
 #include "my_lib/kinematics.h"
 
+#include <Eigen/Dense>
+
 #include <array>
 #include <iostream>
 
@@ -92,36 +97,31 @@ int main()
 {
     constexpr double PI = kinematics::Kinematics::PI;
 
-    // MDH parameters of a 6-DOF arm (example values)
     const std::array<double, 6> alpha = {0.0, -PI / 2, 0.0, PI / 2, -PI / 2, PI / 2};
     const std::array<double, 6> a     = {0.0, 0.0, 0.6, 0.0, 0.0, 0.0};
     const std::array<double, 6> d     = {0.6, 0.0, 0.0, 0.6, 0.0, 0.05};
+    const std::array<double, 6> q0    = {0.0, PI / 2, PI / 4, 0.0, 0.0, 0.0};
 
-    kinematics::Kinematics kin(alpha, a, d);
+    const std::array<Eigen::Vector3d, 3> targets = {
+        Eigen::Vector3d(0.9, 0.1, 0.2),
+        Eigen::Vector3d(0.7, 0.1, 0.3),
+        Eigen::Vector3d(0.6, 0.2, 0.4)
+    };
 
-    // Robot-specific data is injected, not hard-coded
-    kin.set_theta_offsets({0.0, -PI / 2, PI / 2, 0.0, 0.0, 0.0});
-    kin.set_joint_limits(
-        {-3.14, 0.0, 0.0, -3.14, -1.57, -1e9},
-        { 3.14, 2.5, 2.5,  3.14,  1.57,  1e9});
+    for (const auto& t : targets) {
+        kinematics::Kinematics kin(alpha, a, d);
+        kin.set_theta_offsets({0.0, -PI / 2, PI / 2, 0.0, 0.0, 0.0});
+        kin.set_joint_limits(
+            {-3.14, 0.0, 0.0, -3.14, -1.57, -1e9},
+            { 3.14, 2.5, 2.5,  3.14,  1.57,  1e9});
+        kin.set_joint_angles(q0);
 
-    // Forward kinematics
-    kin.set_joint_angles({0.0, PI / 2, PI / 4, 0.0, 0.0, 0.0});
-    const Eigen::Vector3d p = kin.end_position();
-    std::cout << "FK position: " << p.transpose() << "\n";
+        const bool ok = kin.solve_inverse_kinematics(t, 1000, 1e-4, 0.2, 0.1);
+        const double err = (kin.end_position() - t).norm();
 
-    // Inverse kinematics (position-only, 3x6 Jacobian)
-    const Eigen::Vector3d target(0.4, 0.1, 1.0);
-    const bool converged = kin.solve_inverse_kinematics(
-        target, /*max_iterations=*/1000, /*tolerance=*/1e-4,
-        /*step_size=*/0.2, /*max_joint_step=*/0.1);
-
-    if (converged) {
-        const auto q = kin.get_joint_angles();
-        const double err = (kin.end_position() - target).norm();
-        std::cout << "IK converged, residual error: " << err << " m\n";
-    } else {
-        std::cout << "IK failed to converge within iteration budget.\n";
+        std::cout << "target [" << t.transpose() << "] -> "
+                  << (ok ? "converged" : "FAILED")
+                  << ", residual " << err << " m\n";
     }
     return 0;
 }
@@ -174,8 +174,9 @@ in a separate, private project):
 - Position-only IK (3×6 Jacobian); end-effector orientation is not
   controlled.
 - No redundancy resolution / null-space optimisation.
-- Numerical solver may still converge slowly near singularities;
-  damped least squares is a planned improvement.
+- Numerical IK convergence depends on the starting pose; targets near the
+  fully-vertical / singular configuration may exhaust the iteration budget
+  even when reachable.
 - This is a kinematics library only — no dynamics, no trajectory
   generation, no ROS nodes.
 
