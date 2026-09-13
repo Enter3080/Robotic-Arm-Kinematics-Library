@@ -1,3 +1,6 @@
+// Copyright 2026 Entan Zhang
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * @file kinematics.cpp
  * @brief Implementation of 6-DOF robotic arm kinematics library
