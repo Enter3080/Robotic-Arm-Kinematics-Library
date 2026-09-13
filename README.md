@@ -48,19 +48,11 @@ my_lib/
 ```bash
 mkdir -p ~/kinematics_ws/src
 cd ~/kinematics_ws/src
-git clone <repository-url>          # the directory name does not matter
+git clone <repository-url> my_lib
 cd ~/kinematics_ws
 colcon build --packages-select my_lib
 source install/setup.bash
 ```
-
-> **Why `--packages-select my_lib`?** The ROS 2 package name is `my_lib`
-> (defined in `package.xml`), independent of the repository or checkout
-> directory name. Colcon discovers packages by scanning for
-> `package.xml`, and all downstream code uses `find_package(my_lib)` and
-> `#include "my_lib/kinematics.h"` regardless of what the checkout folder
-> is called. Cloning into a directory named `my_lib` is recommended for
-> readability, but not required.
 
 ## Using it in your own package
 
