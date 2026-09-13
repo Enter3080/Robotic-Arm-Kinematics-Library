@@ -48,7 +48,7 @@ my_lib/
 ```bash
 mkdir -p ~/kinematics_ws/src
 cd ~/kinematics_ws/src
-git clone [<repository-url>](https://github.com/Enter3080/Robotic-Arm-Kinematics-Library.git) my_lib
+git clone https://github.com/Enter3080/Robotic-Arm-Kinematics-Library.git my_lib
 cd ~/kinematics_ws
 colcon build --packages-select my_lib
 source install/setup.bash
